@@ -24,41 +24,41 @@ const userController = {
     }
   },
 
-  async createUser(req, res) {
-    try {
-      const { username, email, password, profilePicture } = req.body;
+  // async createUser(req, res) {
+  //   try {
+  //     const { username, email, password, profilePicture } = req.body;
 
-      // Hash the password
-      const hashedPassword = await bcrypt.hash(password, 10);
+  //     // Hash the password
+  //     const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Generate confirmation token (you may want to use a library like crypto for this)
-      const confirmationToken = Math.random().toString(36).substring(2, 15);
+  //     // Generate confirmation token (you may want to use a library like crypto for this)
+  //     const confirmationToken = Math.random().toString(36).substring(2, 15);
 
-      const user = await User.create({
-        username,
-        email,
-        password: hashedPassword,
-        profilePicture,
-        isEmailConfirmed: false,
-        confirmationToken,
-      });
+  //     const user = await User.create({
+  //       username,
+  //       email,
+  //       password: hashedPassword,
+  //       profilePicture,
+  //       isEmailConfirmed: false,
+  //       confirmationToken,
+  //     });
 
-      // Here you would typically send a confirmation email with the confirmationToken
+  //     // Here you would typically send a confirmation email with the confirmationToken
 
-      res.status(201).json({
-        message: "User created successfully",
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          profilePicture: user.profilePicture,
-          isEmailConfirmed: user.isEmailConfirmed,
-        },
-      });
-    } catch (error) {
-      res.status(400).json({ message: error.message });
-    }
-  },
+  //     res.status(201).json({
+  //       message: "User created successfully",
+  //       user: {
+  //         id: user.id,
+  //         username: user.username,
+  //         email: user.email,
+  //         profilePicture: user.profilePicture,
+  //         isEmailConfirmed: user.isEmailConfirmed,
+  //       },
+  //     });
+  //   } catch (error) {
+  //     res.status(400).json({ message: error.message });
+  //   }
+  // },
 
   async updateUser(req, res) {
     try {

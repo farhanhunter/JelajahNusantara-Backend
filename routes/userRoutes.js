@@ -1,13 +1,31 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/userController");
+const authController = require("../controllers/authController"); // Import authController
 const { body, validationResult } = require("express-validator");
 
+// Middleware untuk validasi input
+const validate = (validations) => {
+  return async (req, res, next) => {
+    await Promise.all(validations.map((validation) => validation.run(req)));
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  };
+};
+
+// Rute untuk operasi CRUD pengguna
 router.get("/", userController.getAllUsers);
 router.get("/:id", userController.getUserById);
+router.put("/:id", userController.updateUser);
+router.delete("/:id", userController.deleteUser);
+
+// Rute untuk registrasi pengguna
 router.post(
-  "/",
-  [
+  "/auth/register",
+  validate([
     body("username")
       .notEmpty()
       .withMessage("Username is required")
@@ -23,17 +41,18 @@ router.post(
       .optional()
       .isURL()
       .withMessage("Profile picture must be a valid URL"),
-  ],
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    next();
-  },
-  userController.createUser
+  ]),
+  authController.register // Menggunakan fungsi register dari authController
 );
-router.put("/:id", userController.updateUser);
-router.delete("/:id", userController.deleteUser);
+
+// Rute untuk login pengguna
+router.post(
+  "/auth/login",
+  validate([
+    body("email").isEmail().withMessage("Invalid email").normalizeEmail(),
+    body("password").notEmpty().withMessage("Password is required"),
+  ]),
+  authController.login // Menggunakan fungsi login dari authController
+);
 
 module.exports = router;
