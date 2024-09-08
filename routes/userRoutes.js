@@ -24,4 +24,6 @@ router.post(
 // Rute untuk login pengguna
 router.post("auth/login", validate(loginValidation), authController.login);
 
+router.post("/auth/confirm-email/:token", authController.confirmEmail);
+
 module.exports = router;

@@ -78,11 +78,20 @@ const authController = {
 
   async confirmEmail(req, res) {
     try {
-      const { token } = req.params;
+      const { token } = req.body; // Menggunakan req.body alih-alih req.params
+
+      if (!token) {
+        return res.status(400).json({ message: "Token is required" });
+      }
+
       const user = await User.findOne({ where: { confirmationToken: token } });
 
       if (!user) {
         return res.status(400).json({ message: "Invalid confirmation token" });
+      }
+
+      if (user.isEmailConfirmed) {
+        return res.status(400).json({ message: "Email already confirmed" });
       }
 
       user.isEmailConfirmed = true;
@@ -92,9 +101,12 @@ const authController = {
       res.status(200).json({ message: "Email confirmed successfully" });
     } catch (error) {
       console.error("Email confirmation error:", error);
-      res.status(500).json({ message: "Could not confirm email" });
+      res
+        .status(500)
+        .json({ message: "Could not confirm email", error: error.message });
     }
   },
+
   async forgotPassword(req, res) {
     const { email } = req.body;
     let user;
