@@ -78,7 +78,7 @@ const authController = {
 
   async confirmEmail(req, res) {
     try {
-      const { token } = req.body; // Menggunakan req.body alih-alih req.params
+      const { token } = req.params; // Menggunakan req.body alih-alih req.params
 
       if (!token) {
         return res.status(400).json({ message: "Token is required" });
