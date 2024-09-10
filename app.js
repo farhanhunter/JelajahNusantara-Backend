@@ -7,6 +7,7 @@ const express = require("express");
 const cors = require("cors");
 const { sequelize } = require("./models");
 const userRoutes = require("./routes/userRoutes");
+const userProfileRoutes = require("./routes/userProfileRoutes");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
 
@@ -52,6 +53,7 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
 // Routes
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.use("/api", userRoutes);
+app.use("/api/profiles", userProfileRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to JelajahNusantara API" });
