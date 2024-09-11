@@ -209,6 +209,36 @@ router.get("/auth/confirm-email/:token", authController.confirmEmail);
 
 /**
  * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Meminta reset password
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: Alamat email pengguna
+ *     responses:
+ *       200:
+ *         description: Instruksi reset password dikirim ke email
+ *       404:
+ *         description: Email tidak ditemukan
+ *       500:
+ *         description: Kesalahan server
+ */
+router.post(
+  "/auth/forgot-password",
+  validate(forgotPasswordValidation),
+  authController.forgotPassword
+);
+
+/**
+ * @swagger
  * /auth/reset-password/{resettoken}:
  *   put:
  *     summary: Reset password menggunakan token

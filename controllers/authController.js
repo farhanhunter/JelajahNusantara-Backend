@@ -49,7 +49,7 @@ const authController = {
       // Create confirmation URL
       const confirmationUrl = `${req.protocol}://${req.get(
         "host"
-      )}/api/v1/auth/confirm-email/${confirmationToken}`;
+      )}/api/auth/confirm-email/${confirmationToken}`;
 
       // Send confirmation email
       await sendEmail({
@@ -78,25 +78,31 @@ const authController = {
 
   async confirmEmail(req, res) {
     try {
-      const { token } = req.params; // Menggunakan req.body alih-alih req.params
+      console.log("Confirming email with token:", req.params.token);
+      const { token } = req.params;
 
       if (!token) {
+        console.log("Token is missing");
         return res.status(400).json({ message: "Token is required" });
       }
 
       const user = await User.findOne({ where: { confirmationToken: token } });
+      console.log("User found:", user ? user.id : "No user found");
 
       if (!user) {
+        console.log("Invalid token");
         return res.status(400).json({ message: "Invalid confirmation token" });
       }
 
       if (user.isEmailConfirmed) {
+        console.log("Email already confirmed for user:", user.id);
         return res.status(400).json({ message: "Email already confirmed" });
       }
 
       user.isEmailConfirmed = true;
       user.confirmationToken = null;
       await user.save();
+      console.log("User updated:", user.id);
 
       res.status(200).json({ message: "Email confirmed successfully" });
     } catch (error) {

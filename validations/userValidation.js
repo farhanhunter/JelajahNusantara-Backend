@@ -12,10 +12,6 @@ const registerValidation = [
     .withMessage("Password must be at least 6 characters long")
     .matches(/\d/)
     .withMessage("Password must contain a number"),
-  body("profilePicture")
-    .optional()
-    .isURL()
-    .withMessage("Profile picture must be a valid URL"),
 ];
 
 const loginValidation = [
