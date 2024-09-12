@@ -8,9 +8,21 @@ module.exports = {
     dialect: "postgres",
   },
   test: {
-    // konfigurasi untuk environment test
+    username: process.env.TEST_DB_USER,
+    password: process.env.TEST_DB_PASS,
+    database: process.env.TEST_DB_NAME,
+    host: process.env.TEST_DB_HOST,
+    dialect: "postgres",
+    logging: false, // Disable logging for tests
   },
   production: {
-    // konfigurasi untuk environment production
+    use_env_variable: "DATABASE_URL",
+    dialect: "postgres",
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
   },
 };

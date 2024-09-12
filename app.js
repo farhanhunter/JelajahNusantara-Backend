@@ -5,14 +5,12 @@ if (!process.env.JWT_SECRET) {
 }
 const express = require("express");
 const cors = require("cors");
-const { sequelize } = require("./models");
 const userRoutes = require("./routes/userRoutes");
 const userProfileRoutes = require("./routes/userProfileRoutes");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
 
 const app = express();
-const PORT = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
@@ -65,15 +63,4 @@ app.use((err, req, res, next) => {
   res.status(500).send("Something broke!");
 });
 
-// Sync database
-sequelize
-  .sync({ force: false })
-  .then(() => {
-    console.log("Database synced");
-    app.listen(PORT, () => {
-      console.log(`Server is running on port http://localhost:${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("Unable to sync database:", err);
-  });
+module.exports = app;
