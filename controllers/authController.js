@@ -183,8 +183,8 @@ const authController = {
       }
 
       user.password = await bcrypt.hash(req.body.password, 10);
-      user.resetPasswordToken = undefined;
-      user.resetPasswordExpires = undefined;
+      user.resetPasswordToken = null; // Pastikan ini diset menjadi null
+      user.resetPasswordExpires = null; // Pastikan ini juga diset menjadi null
       await user.save();
 
       res.status(200).json({ message: "Password reset successful" });
