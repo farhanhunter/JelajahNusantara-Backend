@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const userProfileController = require("../controllers/userProfileController");
-
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
 /**
  * @swagger
  * /profiles:
@@ -60,7 +61,11 @@ router.get("/:id", userProfileController.getUserProfileById);
  *       404:
  *         description: User not found
  */
-router.post("/", userProfileController.createUserProfile);
+router.post(
+  "/",
+  upload.single("profilePicture"),
+  userProfileController.createUserProfile
+);
 
 /**
  * @swagger
@@ -91,7 +96,11 @@ router.post("/", userProfileController.createUserProfile);
  *       404:
  *         description: User profile not found
  */
-router.put("/:id", userProfileController.updateUserProfile);
+router.put(
+  "/:id",
+  upload.single("profilePicture"),
+  userProfileController.updateUserProfile
+);
 
 /**
  * @swagger
