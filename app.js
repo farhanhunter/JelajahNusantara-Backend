@@ -6,6 +6,7 @@ if (!process.env.JWT_SECRET) {
 const express = require("express");
 const cors = require("cors");
 const userRoutes = require("./routes/userRoutes");
+const postRoutes = require("./routes/postRoutes");
 const userProfileRoutes = require("./routes/userProfileRoutes");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
@@ -50,8 +51,12 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
 // Routes
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-app.use("/api", userRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/posts", postRoutes);
 app.use("/api/profiles", userProfileRoutes);
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.timeout = 300000; // 5 menit
 
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to JelajahNusantara API" });

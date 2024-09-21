@@ -1,17 +1,53 @@
 const express = require("express");
 const router = express.Router();
 const userProfileController = require("../controllers/userProfileController");
-const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
+const { upload } = require("../config/uploadConfig");
+const { body, param, validationResult } = require("express-validator");
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     UserProfile:
+ *       type: object
+ *       required:
+ *         - userId
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: The auto-generated id of the user profile
+ *         userId:
+ *           type: integer
+ *           description: The user ID associated with this profile
+ *         profilePicture:
+ *           type: string
+ *           description: URL of the profile picture
+ */
+
+// Middleware sederhana untuk validasi
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  next();
+};
+
 /**
  * @swagger
  * /profiles:
  *   get:
- *     summary: Get all user profiles
+ *     summary: Retrieve all user profiles
  *     tags: [UserProfiles]
  *     responses:
  *       200:
  *         description: List of all user profiles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/UserProfile'
  */
 router.get("/", userProfileController.getAllUserProfiles);
 
@@ -19,7 +55,7 @@ router.get("/", userProfileController.getAllUserProfiles);
  * @swagger
  * /profiles/{id}:
  *   get:
- *     summary: Get user profile by ID
+ *     summary: Get a user profile by ID
  *     tags: [UserProfiles]
  *     parameters:
  *       - in: path
@@ -31,10 +67,19 @@ router.get("/", userProfileController.getAllUserProfiles);
  *     responses:
  *       200:
  *         description: User profile details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserProfile'
  *       404:
  *         description: User profile not found
  */
-router.get("/:id", userProfileController.getUserProfileById);
+router.get(
+  "/:id",
+  param("id").isInt().withMessage("ID harus berupa integer"),
+  validate,
+  userProfileController.getUserProfileById
+);
 
 /**
  * @swagger
@@ -45,25 +90,26 @@ router.get("/:id", userProfileController.getUserProfileById);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
  *               userId:
  *                 type: integer
- *                 description: User ID
  *               profilePicture:
  *                 type: string
- *                 description: URL of the profile picture
+ *                 format: binary
  *     responses:
  *       201:
  *         description: User profile created
- *       404:
- *         description: User not found
+ *       400:
+ *         description: Invalid input
  */
 router.post(
   "/",
   upload.single("profilePicture"),
+  [body("userId").isInt().withMessage("User ID harus berupa integer")],
+  validate,
   userProfileController.createUserProfile
 );
 
@@ -71,7 +117,7 @@ router.post(
  * @swagger
  * /profiles/{id}:
  *   put:
- *     summary: Update user profile by ID
+ *     summary: Update a user profile
  *     tags: [UserProfiles]
  *     parameters:
  *       - in: path
@@ -81,15 +127,14 @@ router.post(
  *         required: true
  *         description: User profile ID
  *     requestBody:
- *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
  *               profilePicture:
  *                 type: string
- *                 description: URL of the profile picture
+ *                 format: binary
  *     responses:
  *       200:
  *         description: User profile updated
@@ -99,6 +144,8 @@ router.post(
 router.put(
   "/:id",
   upload.single("profilePicture"),
+  param("id").isInt().withMessage("ID harus berupa integer"),
+  validate,
   userProfileController.updateUserProfile
 );
 
@@ -106,7 +153,7 @@ router.put(
  * @swagger
  * /profiles/{id}:
  *   delete:
- *     summary: Delete user profile by ID
+ *     summary: Delete a user profile
  *     tags: [UserProfiles]
  *     parameters:
  *       - in: path
@@ -121,6 +168,11 @@ router.put(
  *       404:
  *         description: User profile not found
  */
-router.delete("/:id", userProfileController.deleteUserProfile);
+router.delete(
+  "/:id",
+  param("id").isInt().withMessage("ID harus berupa integer"),
+  validate,
+  userProfileController.deleteUserProfile
+);
 
 module.exports = router;

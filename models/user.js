@@ -2,10 +2,19 @@
 const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
+    // Di dalam models/user.js
     static associate(models) {
       User.hasOne(models.UserProfile, {
         foreignKey: "userId",
         as: "profile",
+      });
+      User.hasMany(models.Post, {
+        foreignKey: "userId",
+        as: "posts",
+      });
+      User.hasMany(models.Like, {
+        foreignKey: "userId",
+        as: "likes",
       });
     }
   }

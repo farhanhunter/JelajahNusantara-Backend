@@ -1,7 +1,7 @@
 const { UserProfile, User } = require("../models");
-const cloudinary = require("../config/cloudinaryConfig");
+const { upload, uploadToCloudinary } = require("../config/uploadConfig");
 const fs = require("fs");
-const path = require("path");
+const { validationResult } = require("express-validator");
 
 const userProfileController = {
   async getAllUserProfiles(req, res) {
@@ -9,12 +9,18 @@ const userProfileController = {
       const profiles = await UserProfile.findAll({
         include: [{ model: User, as: "user" }],
       });
-      res.json(profiles);
+      res.status(200).json({
+        success: true,
+        message: "User profiles retrieved successfully",
+        data: profiles,
+      });
     } catch (error) {
       console.error("Error fetching user profiles:", error);
-      res
-        .status(500)
-        .json({ message: "An error occurred while fetching user profiles" });
+      res.status(500).json({
+        success: false,
+        message: "An error occurred while fetching user profiles",
+        error: error.message,
+      });
     }
   },
 
@@ -27,75 +33,148 @@ const userProfileController = {
       });
 
       if (!profile) {
-        return res.status(404).json({ message: "User profile not found" });
+        return res.status(404).json({
+          success: false,
+          message: "User profile not found",
+        });
       }
 
-      res.json(profile);
+      res.status(200).json({
+        success: true,
+        message: "User profile retrieved successfully",
+        data: profile,
+      });
     } catch (error) {
       console.error("Error fetching user profile:", error);
-      res
-        .status(500)
-        .json({ message: "An error occurred while fetching user profile" });
+      res.status(500).json({
+        success: false,
+        message: "An error occurred while fetching user profile",
+        error: error.message,
+      });
     }
   },
 
   async createUserProfile(req, res) {
+    console.log("Starting createUserProfile function");
+    const startTime = Date.now();
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      console.log("Validation errors:", errors.array());
+      return res.status(400).json({
+        success: false,
+        message: "Validation error",
+        errors: errors.array(),
+      });
+    }
+
     try {
-      const { userId, profilePicture } = req.body;
+      console.log("Received request body:", req.body);
+      console.log("Received file:", req.file);
+      const { userId } = req.body;
+      const file = req.file;
 
-      const user = await User.findByPk(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      let profileData = { userId };
-
-      if (profilePicture) {
-        try {
-          // Assuming profilePicture is the path to the file in the uploads folder
-          const filePath = path.join(
-            __dirname,
-            "..",
-            "uploads",
-            profilePicture
-          );
-
-          if (fs.existsSync(filePath)) {
-            const result = await cloudinary.uploader.upload(filePath);
-            profileData.profilePicture = result.secure_url;
-            profileData.cloudinaryId = result.public_id;
-
-            // Clean up the local file after upload
-            fs.unlinkSync(filePath);
-          } else {
-            return res
-              .status(404)
-              .json({ message: "Profile picture file not found" });
-          }
-        } catch (uploadError) {
-          console.error("Error uploading to Cloudinary:", uploadError);
-          return res.status(500).json({ message: "Error uploading image" });
+      // Pemeriksaan Ukuran File
+      if (file) {
+        console.log("File size:", file.size);
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+          return res.status(400).json({
+            success: false,
+            message: "File size exceeds the limit of 5MB",
+          });
         }
       }
 
+      console.log("Searching for user with ID:", userId);
+      const userSearchStartTime = Date.now();
+      const user = await User.findByPk(userId);
+      console.log(
+        `Time taken for user search: ${Date.now() - userSearchStartTime}ms`
+      );
+
+      if (!user) {
+        console.log("User not found for ID:", userId);
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+      console.log("User found:", user.id);
+
+      let profileData = { userId };
+
+      if (file) {
+        console.log("File detected, starting Cloudinary upload");
+        const uploadStartTime = Date.now();
+        try {
+          const result = await uploadToCloudinary(file);
+          console.log("Cloudinary upload successful:", result.public_id);
+          console.log(
+            `Time taken for Cloudinary upload: ${
+              Date.now() - uploadStartTime
+            }ms`
+          );
+          profileData.profilePicture = result.secure_url;
+          profileData.cloudinaryId = result.public_id;
+        } catch (uploadError) {
+          console.error("Error uploading to Cloudinary:", uploadError);
+          return res.status(500).json({
+            success: false,
+            message: "Error uploading image",
+            error: uploadError.message,
+          });
+        }
+      }
+
+      console.log("Creating user profile with data:", profileData);
+      const profileCreateStartTime = Date.now();
       const profile = await UserProfile.create(profileData);
-      res.status(201).json(profile);
+      console.log(
+        `Time taken for profile creation: ${
+          Date.now() - profileCreateStartTime
+        }ms`
+      );
+      console.log("User profile created successfully:", profile.id);
+
+      const totalTime = Date.now() - startTime;
+      console.log(`Total time taken for createUserProfile: ${totalTime}ms`);
+
+      return res.status(201).json({
+        success: true,
+        message: "User profile created successfully",
+        data: profile,
+        executionTime: totalTime,
+      });
     } catch (error) {
-      console.error("Error creating user profile:", error);
-      res
-        .status(500)
-        .json({ message: "An error occurred while creating user profile" });
+      console.error("Error in createUserProfile:", error);
+      return res.status(500).json({
+        success: false,
+        message: "An error occurred while creating user profile",
+        error: error.message,
+      });
     }
   },
 
   async updateUserProfile(req, res) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation error",
+        errors: errors.array(),
+      });
+    }
+
     try {
       const { id } = req.params;
       const file = req.file;
 
       const profile = await UserProfile.findByPk(id);
       if (!profile) {
-        return res.status(404).json({ message: "User profile not found" });
+        return res.status(404).json({
+          success: false,
+          message: "User profile not found",
+        });
       }
 
       if (file) {
@@ -104,25 +183,39 @@ const userProfileController = {
             await cloudinary.uploader.destroy(profile.cloudinaryId);
           }
 
-          const result = await cloudinary.uploader.upload(file.path);
+          const result = await cloudinary.uploader.upload(file.path, {
+            folder: "user_profiles",
+            use_filename: true,
+            unique_filename: false,
+          });
           profile.profilePicture = result.secure_url;
           profile.cloudinaryId = result.public_id;
+
+          // Hapus file lokal
+          fs.unlinkSync(file.path);
         } catch (uploadError) {
           console.error("Error updating image on Cloudinary:", uploadError);
-          return res.status(500).json({ message: "Error updating image" });
-        } finally {
-          // Clean up the local file
-          fs.unlinkSync(file.path);
+          return res.status(500).json({
+            success: false,
+            message: "Error updating image",
+            error: uploadError.message,
+          });
         }
       }
 
       await profile.save();
-      res.json(profile);
+      res.status(200).json({
+        success: true,
+        message: "User profile updated successfully",
+        data: profile,
+      });
     } catch (error) {
       console.error("Error updating user profile:", error);
-      res
-        .status(500)
-        .json({ message: "An error occurred while updating user profile" });
+      res.status(500).json({
+        success: false,
+        message: "An error occurred while updating user profile",
+        error: error.message,
+      });
     }
   },
 
@@ -132,7 +225,10 @@ const userProfileController = {
 
       const profile = await UserProfile.findByPk(id);
       if (!profile) {
-        return res.status(404).json({ message: "User profile not found" });
+        return res.status(404).json({
+          success: false,
+          message: "User profile not found",
+        });
       }
 
       if (profile.cloudinaryId) {
@@ -140,16 +236,22 @@ const userProfileController = {
           await cloudinary.uploader.destroy(profile.cloudinaryId);
         } catch (deleteError) {
           console.error("Error deleting image from Cloudinary:", deleteError);
+          // Lanjutkan proses penghapusan meskipun ada kesalahan dengan Cloudinary
         }
       }
 
       await profile.destroy();
-      res.json({ message: "User profile deleted successfully" });
+      res.status(200).json({
+        success: true,
+        message: "User profile deleted successfully",
+      });
     } catch (error) {
       console.error("Error deleting user profile:", error);
-      res
-        .status(500)
-        .json({ message: "An error occurred while deleting user profile" });
+      res.status(500).json({
+        success: false,
+        message: "An error occurred while deleting user profile",
+        error: error.message,
+      });
     }
   },
 };
