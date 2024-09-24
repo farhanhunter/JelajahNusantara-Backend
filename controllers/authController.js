@@ -28,6 +28,12 @@ const authController = {
   async register(req, res) {
     try {
       const { username, email, password } = req.body;
+
+      // Basic input validation
+      if (!username || !email || !password) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // Generate confirmation token
@@ -39,7 +45,10 @@ const authController = {
         password: hashedPassword,
         confirmationToken,
         isEmailConfirmed: false,
+        confirmationTokenExpires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours from now
       });
+
+      console.log(`User registered: ${user.id}`);
 
       // Generate JWT token
       const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
@@ -49,7 +58,7 @@ const authController = {
       // Create confirmation URL
       const confirmationUrl = `${req.protocol}://${req.get(
         "host"
-      )}/api/auth/confirm-email/${confirmationToken}`;
+      )}/api/users/auth/confirm-email/${confirmationToken}`;
 
       // Send confirmation email
       await sendEmail({
@@ -57,6 +66,8 @@ const authController = {
         subject: "Please confirm your email",
         message: `Thank you for registering. Please confirm your email by clicking on the following link: \n\n ${confirmationUrl}`,
       });
+
+      console.log(`Confirmation email sent to: ${user.email}`);
 
       res.status(201).json({
         message:
