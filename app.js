@@ -5,6 +5,7 @@ if (!process.env.JWT_SECRET) {
 }
 const express = require("express");
 const cors = require("cors");
+const { sequelize } = require("./models");
 const userRoutes = require("./routes/userRoutes");
 const postRoutes = require("./routes/postRoutes");
 const userProfileRoutes = require("./routes/userProfileRoutes");
@@ -12,6 +13,11 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
 
 const app = express();
+
+const PORT = process.env.PORT || 4000;
+
+const CSS_URL =
+  "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css";
 
 app.use(cors());
 app.use(express.json());
@@ -27,6 +33,9 @@ const swaggerOptions = {
     servers: [
       {
         url: "http://localhost:4000/api",
+      },
+      {
+        url: "https://jelajah-nusantara-backend.vercel.app/api",
       },
     ],
     components: {
@@ -50,7 +59,11 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
 // Routes
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocs, { explorer: true, customCssUrl: CSS_URL })
+);
 app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/profiles", userProfileRoutes);
@@ -67,5 +80,18 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send("Something broke!");
 });
+
+// Sync database and start server
+sequelize
+  .sync({ force: false })
+  .then(() => {
+    console.log("Database synced");
+    app.listen(PORT, () => {
+      console.log(`Server is running on port http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Unable to sync database:", err);
+  });
 
 module.exports = app;

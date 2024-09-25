@@ -12,7 +12,7 @@ const { validate } = require("../middleware/validateMiddleware");
 
 /**
  * @swagger
- * /:
+ * /users/:
  *   get:
  *     summary: Mendapatkan semua pengguna
  *     tags: [Users]
@@ -37,7 +37,7 @@ router.get("/", userController.getAllUsers);
 
 /**
  * @swagger
- * /{id}:
+ * /users/{id}:
  *   get:
  *     summary: Mendapatkan pengguna berdasarkan ID
  *     tags: [Users]
@@ -58,7 +58,7 @@ router.get("/:id", userController.getUserById);
 
 /**
  * @swagger
- * /{id}:
+ * /users/{id}:
  *   put:
  *     summary: Memperbarui pengguna berdasarkan ID
  *     tags: [Users]
@@ -98,7 +98,7 @@ router.put("/:id", userController.updateUser);
 
 /**
  * @swagger
- * /{id}:
+ * /users/{id}:
  *   delete:
  *     summary: Menghapus pengguna berdasarkan ID
  *     tags: [Users]
@@ -119,7 +119,7 @@ router.delete("/:id", userController.deleteUser);
 
 /**
  * @swagger
- * /auth/register:
+ * /usersauth/register:
  *   post:
  *     summary: Registrasi pengguna baru
  *     tags: [Users]
@@ -153,7 +153,7 @@ router.post(
 
 /**
  * @swagger
- * /auth/login:
+ * /users/auth/login:
  *   post:
  *     summary: Login pengguna
  *     tags: [Users]
@@ -188,7 +188,7 @@ router.post("/auth/login", validate(loginValidation), authController.login);
 
 /**
  * @swagger
- * /auth/confirm-email/{token}:
+ * /users/auth/confirm-email/{token}:
  *   post:
  *     summary: Konfirmasi email dengan token
  *     tags: [Users]
@@ -209,7 +209,7 @@ router.get("/auth/confirm-email/:token", authController.confirmEmail);
 
 /**
  * @swagger
- * /auth/forgot-password:
+ * /users/auth/forgot-password:
  *   post:
  *     summary: Meminta reset password
  *     tags: [Users]
@@ -239,7 +239,7 @@ router.post(
 
 /**
  * @swagger
- * /auth/reset-password/{resettoken}:
+ * /users/auth/reset-password/{resettoken}:
  *   put:
  *     summary: Reset password menggunakan token
  *     tags: [Users]
@@ -274,7 +274,7 @@ router.put(
 
 /**
  * @swagger
- * /auth/reset-password/{resettoken}:
+ * /users/auth/reset-password/{resettoken}:
  *   put:
  *     summary: Reset password menggunakan token
  *     tags: [Users]

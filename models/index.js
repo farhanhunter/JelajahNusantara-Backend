@@ -6,20 +6,18 @@ const Sequelize = require("sequelize");
 const process = require("process");
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || "development";
+console.log("Current environment:", env);
+
+// Langsung menggunakan DATABASE_URL dari .env
+const databaseUrl = process.env.DATABASE_URL;
+console.log("Database URL:", databaseUrl);
+
 const config = require(__dirname + "/../config/config.js")[env];
+console.log("Database configuration:", JSON.stringify(config, null, 2));
+
 const db = {};
 
-let sequelize;
-if (config.use_env_variable) {
-  sequelize = new Sequelize(process.env[config.use_env_variable], config);
-} else {
-  sequelize = new Sequelize(
-    config.database,
-    config.username,
-    config.password,
-    config
-  );
-}
+let sequelize = new Sequelize(databaseUrl, config);
 
 fs.readdirSync(__dirname)
   .filter((file) => {

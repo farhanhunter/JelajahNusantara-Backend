@@ -2,28 +2,25 @@ require("dotenv").config();
 
 module.exports = {
   development: {
-    username: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-    host: process.env.DB_HOST,
+    use_env_variable: "DATABASE_URL",
     dialect: "postgres",
+    // Tidak perlu SSL untuk development
   },
   test: {
-    username: process.env.TEST_DB_USER,
-    password: process.env.TEST_DB_PASS,
-    database: process.env.TEST_DB_NAME,
-    host: process.env.TEST_DB_HOST,
+    use_env_variable: "TEST_DATABASE_URL",
     dialect: "postgres",
     logging: false, // Disable logging for tests
   },
   production: {
     use_env_variable: "DATABASE_URL",
     dialect: "postgres",
+    dialectModule: require("pg"),
     dialectOptions: {
       ssl: {
         require: true,
         rejectUnauthorized: false,
       },
     },
+    logging: console.log,
   },
 };
