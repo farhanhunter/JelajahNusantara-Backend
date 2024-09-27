@@ -12,6 +12,7 @@ const registerValidation = [
     .withMessage("Password must be at least 6 characters long")
     .matches(/\d/)
     .withMessage("Password must contain a number"),
+  body("role").optional().isIn(["user", "admin"]).withMessage("Invalid role"),
 ];
 
 const loginValidation = [

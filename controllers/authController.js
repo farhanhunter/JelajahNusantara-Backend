@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const { User } = require("../models");
 const { Op } = require("sequelize");
 const sendEmail = require("../utils/sendEmail");
+const e = require("cors");
 
 const authController = {
   async login(req, res) {
@@ -15,10 +16,29 @@ const authController = {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-        expiresIn: "1h",
+      if (!user.isEmailConfirmed) {
+        return res.status(403).json({
+          message:
+            "Email not confirmed. Please check your email and confirm your account before logging in.",
+          confirmationToken: user.confirmationToken,
+        });
+      }
+
+      const token = jwt.sign(
+        { id: user.id, role: user.role },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "1h",
+        }
+      );
+      res.json({
+        token,
+        user: {
+          id: user.id,
+          email: email,
+          role: user.role,
+        },
       });
-      res.json({ token });
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "An error occurred during login" });
@@ -27,22 +47,21 @@ const authController = {
 
   async register(req, res) {
     try {
-      const { username, email, password } = req.body;
-
-      // Basic input validation
-      if (!username || !email || !password) {
-        return res.status(400).json({ message: "All fields are required" });
-      }
+      const { username, email, password, role } = req.body;
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Generate confirmation token
       const confirmationToken = crypto.randomBytes(20).toString("hex");
+
+      if (!username || !email || !password) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
 
       const user = await User.create({
         username,
         email,
         password: hashedPassword,
+        role: role || "user",
         confirmationToken,
         isEmailConfirmed: false,
         confirmationTokenExpires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours from now
@@ -110,8 +129,19 @@ const authController = {
         return res.status(400).json({ message: "Email already confirmed" });
       }
 
+      if (
+        user.confirmationTokenExpires &&
+        user.confirmationTokenExpires < Date.now()
+      ) {
+        console.log("Confirmation token has expired for user:", user.id);
+        return res
+          .status(400)
+          .json({ message: "Confirmation token has expired" });
+      }
+
       user.isEmailConfirmed = true;
       user.confirmationToken = null;
+      user.confirmationTokenExpires = null;
       await user.save();
       console.log("User updated:", user.id);
 

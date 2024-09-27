@@ -9,6 +9,61 @@ const {
   resetPasswordValidation,
 } = require("../validations/userValidation");
 const { validate } = require("../middleware/validateMiddleware");
+const { verifyTokenAndCheckAdmin } = require("../middleware/authMiddleware");
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       required:
+ *         - username
+ *         - email
+ *         - password
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: The auto-generated id of the user
+ *         username:
+ *           type: string
+ *           description: The username of the user (unique)
+ *         email:
+ *           type: string
+ *           description: The email of the user (unique)
+ *         password:
+ *           type: string
+ *           description: The hashed password of the user
+ *         isEmailConfirmed:
+ *           type: boolean
+ *           description: Indicates whether the user's email is confirmed
+ *           default: false
+ *         confirmationToken:
+ *           type: string
+ *           description: Token used for email confirmation
+ *           nullable: true
+ *         resetPasswordToken:
+ *           type: string
+ *           description: Token used for password reset
+ *           nullable: true
+ *         resetPasswordExpires:
+ *           type: string
+ *           format: date-time
+ *           description: Expiration date for the password reset token
+ *           nullable: true
+ *         role:
+ *           type: string
+ *           description: The role of the user
+ *           default: "user"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: The date when the user was created
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: The date when the user was last updated
+ */
 
 /**
  * @swagger
@@ -33,7 +88,7 @@ const { validate } = require("../middleware/validateMiddleware");
  *       500:
  *         description: Kesalahan server
  */
-router.get("/", userController.getAllUsers);
+router.get("/", verifyTokenAndCheckAdmin, userController.getAllUsers);
 
 /**
  * @swagger
@@ -54,7 +109,7 @@ router.get("/", userController.getAllUsers);
  *       404:
  *         description: Pengguna tidak ditemukan
  */
-router.get("/:id", userController.getUserById);
+router.get("/:id", verifyTokenAndCheckAdmin, userController.getUserById);
 
 /**
  * @swagger
@@ -94,7 +149,7 @@ router.get("/:id", userController.getUserById);
  *       404:
  *         description: Pengguna tidak ditemukan
  */
-router.put("/:id", userController.updateUser);
+router.put("/:id", verifyTokenAndCheckAdmin, userController.updateUser);
 
 /**
  * @swagger
@@ -115,11 +170,11 @@ router.put("/:id", userController.updateUser);
  *       404:
  *         description: Pengguna tidak ditemukan
  */
-router.delete("/:id", userController.deleteUser);
+router.delete("/:id", verifyTokenAndCheckAdmin, userController.deleteUser);
 
 /**
  * @swagger
- * /usersauth/register:
+ * /users/auth/register:
  *   post:
  *     summary: Registrasi pengguna baru
  *     tags: [Users]

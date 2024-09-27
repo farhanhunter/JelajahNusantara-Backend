@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const postController = require("../controllers/postController");
-const authMiddleware = require("../middleware/authMiddleware");
+const { verifyToken } = require("../middleware/authMiddleware");
 const { validate } = require("../middleware/validateMiddleware");
 const { body } = require("express-validator");
 
@@ -74,7 +74,7 @@ const { body } = require("express-validator");
  */
 router.post(
   "/",
-  authMiddleware,
+  verifyToken,
   validate([
     body("content").notEmpty(),
     body("imageUrl").optional().isURL(),
@@ -126,7 +126,7 @@ router.get("/", postController.getPosts);
  */
 router.post(
   "/:postId/like",
-  authMiddleware,
+  verifyToken,
   validate([body("postId").isInt()]),
   postController.likePost
 );
@@ -156,7 +156,7 @@ router.post(
  */
 router.delete(
   "/:postId/like",
-  authMiddleware,
+  verifyToken,
   validate([body("postId").isInt()]),
   postController.unlikePost
 );
