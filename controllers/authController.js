@@ -108,8 +108,8 @@ const authController = {
 
   async confirmEmail(req, res) {
     try {
-      console.log("Confirming email with token:", req.params.token);
-      const { token } = req.params;
+      console.log("Confirming email with token:", req.body.token);
+      const { token } = req.body;
 
       if (!token) {
         console.log("Token is missing");

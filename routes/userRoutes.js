@@ -243,24 +243,26 @@ router.post("/auth/login", validate(loginValidation), authController.login);
 
 /**
  * @swagger
- * /users/auth/confirm-email/{token}:
+ * /users/auth/confirm-email:
  *   post:
  *     summary: Konfirmasi email dengan token
  *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: token
- *         schema:
- *           type: string
- *         required: true
- *         description: Token konfirmasi email
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Email berhasil dikonfirmasi
  *       400:
  *         description: Token tidak valid
  */
-router.get("/auth/confirm-email/:token", authController.confirmEmail);
+router.post("/auth/confirm-email", authController.confirmEmail);
 
 /**
  * @swagger

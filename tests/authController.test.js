@@ -96,6 +96,39 @@ describe("Login", () => {
   });
 });
 
+describe("Confirm Email", () => {
+  it("should confirm email successfully with valid token", async () => {
+    const user = await User.create({
+      username: "testuser",
+      email: "testuser@example.com",
+      password: "password123",
+      confirmationToken: "validtoken",
+      confirmationTokenExpires: Date.now() + 3600000, // 1 hour from now
+    });
+
+    const req = {
+      body: {
+        token: "validtoken",
+      },
+    };
+    const res = mockResponse();
+
+    await authController.confirmEmail(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Email confirmed successfully",
+      })
+    );
+
+    const updatedUser = await User.findByPk(user.id);
+    expect(updatedUser.isEmailConfirmed).toBe(true);
+    expect(updatedUser.confirmationToken).toBeNull();
+    expect(updatedUser.confirmationTokenExpires).toBeNull();
+  });
+});
+
 describe("Forgot Password", () => {
   beforeEach(async () => {
     await User.create({
