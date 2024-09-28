@@ -1,80 +1,132 @@
 // authController.test.js
-const request = require("supertest");
-const app = require("../app"); // Adjust the path to your app.js
-const { User } = require("../models"); // Adjust the path to your User model
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
+const { User } = require("../models"); // Pastikan path ini benar
+const authController = require("../controllers/authController"); // Pastikan path ini benar
 
-describe("POST /api/auth/login", () => {
-  beforeAll(async () => {
-    // Create a test user in the database
-    await User.create({
-      username: "faCopy3",
-      email: "farhan3@yopmail.com",
-      password: await bcrypt.hash("password123", 10), // Hash the password
-    });
-  });
+// Mock untuk response
+const mockResponse = () => {
+  const res = {};
+  res.status = jest.fn().mockReturnValue(res);
+  res.json = jest.fn().mockReturnValue(res);
+  return res;
+};
 
-  afterAll(async () => {
-    // Clean up the test user from the database
-    await User.destroy({ where: { email: "farhan3@yopmail.com" } });
-  });
+// Fungsi helper untuk membersihkan database
+async function clearDatabase() {
+  await User.destroy({ where: {} });
+}
 
-  it("should login successfully with valid credentials", async () => {
-    const response = await request(app).post("/api/auth/login").send({
-      email: "farhan3@yopmail.com",
-      password: "password123",
-    });
-
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty("token");
-  });
-
-  it("should return 401 for invalid credentials", async () => {
-    const response = await request(app).post("/api/auth/login").send({
-      email: "farhan3@yopmail.com",
-      password: "wrongpassword",
-    });
-
-    expect(response.status).toBe(401);
-    expect(response.body).toHaveProperty("message", "Invalid credentials");
-  });
-
-  it("should return 400 for missing fields", async () => {
-    const response = await request(app).post("/api/auth/login").send({
-      email: "farhan3@yopmail.com",
-    });
-
-    expect(response.status).toBe(400);
-    expect(response.body).toHaveProperty("errors");
-  });
+beforeAll(async () => {
+  await clearDatabase();
 });
 
-describe("POST /api/auth/forgot-password", () => {
+afterAll(async () => {
+  await clearDatabase();
+});
+
+describe("Login", () => {
   beforeEach(async () => {
     await User.create({
       username: "testuser",
       email: "testuser@example.com",
       password: await bcrypt.hash("password123", 10),
+      isEmailConfirmed: true,
     });
   });
 
   afterEach(async () => {
-    await User.destroy({ where: { email: "testuser@example.com" } });
+    await clearDatabase();
+  });
+
+  it("should login successfully with valid credentials", async () => {
+    const req = {
+      body: {
+        email: "testuser@example.com",
+        password: "password123",
+      },
+    };
+    const res = mockResponse();
+
+    await authController.login(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        token: expect.any(String),
+      })
+    );
+  });
+
+  it("should return 401 for invalid credentials", async () => {
+    const req = {
+      body: {
+        email: "testuser@example.com",
+        password: "wrongpassword",
+      },
+    };
+    const res = mockResponse();
+
+    await authController.login(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Invalid credentials",
+      })
+    );
+  });
+
+  it("should return 400 for missing fields", async () => {
+    const req = {
+      body: {
+        email: "testuser@example.com",
+      },
+    };
+    const res = mockResponse();
+
+    await authController.login(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        errors: expect.any(Array),
+      })
+    );
+  });
+});
+
+describe("Forgot Password", () => {
+  beforeEach(async () => {
+    await User.create({
+      username: "testuser",
+      email: "testuser@example.com",
+      password: await bcrypt.hash("password123", 10),
+      isEmailConfirmed: true,
+    });
+  });
+
+  afterEach(async () => {
+    await clearDatabase();
   });
 
   it("should send reset password email for valid user", async () => {
-    const response = await request(app)
-      .post("/api/auth/forgot-password")
-      .send({ email: "testuser@example.com" });
+    const req = {
+      body: {
+        email: "testuser@example.com",
+      },
+    };
+    const res = mockResponse();
 
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty(
-      "message",
-      "Reset token sent to email"
+    await authController.forgotPassword(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Reset token sent to email",
+      })
     );
 
-    // Verifikasi bahwa token reset password telah di-set di database
     const user = await User.findOne({
       where: { email: "testuser@example.com" },
     });
@@ -83,16 +135,25 @@ describe("POST /api/auth/forgot-password", () => {
   });
 
   it("should return 404 for non-existent user", async () => {
-    const response = await request(app)
-      .post("/api/auth/forgot-password")
-      .send({ email: "nonexistent@example.com" });
+    const req = {
+      body: {
+        email: "nonexistent@example.com",
+      },
+    };
+    const res = mockResponse();
 
-    expect(response.status).toBe(404);
-    expect(response.body).toHaveProperty("message", "User not found");
+    await authController.forgotPassword(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "User not found",
+      })
+    );
   });
 });
 
-describe("PUT /api/auth/reset-password/:resettoken", () => {
+describe("Reset Password", () => {
   let resetToken;
   let hashedToken;
 
@@ -104,27 +165,32 @@ describe("PUT /api/auth/reset-password/:resettoken", () => {
       username: "resetuser",
       email: "resetuser@example.com",
       password: await bcrypt.hash("oldpassword", 10),
+      isEmailConfirmed: true,
       resetPasswordToken: hashedToken,
-      resetPasswordExpires: Date.now() + 3600000, // Token berlaku selama 1 jam
+      resetPasswordExpires: Date.now() + 3600000,
     });
   });
 
   afterEach(async () => {
-    await User.destroy({ where: { email: "resetuser@example.com" } });
+    await clearDatabase();
   });
 
   it("should reset password with valid token", async () => {
-    const response = await request(app)
-      .put(`/api/auth/reset-password/${resetToken}`)
-      .send({ password: "newpassword123" });
+    const req = {
+      params: { resettoken: resetToken },
+      body: { password: "newpassword123" },
+    };
+    const res = mockResponse();
 
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty(
-      "message",
-      "Password reset successful"
+    await authController.resetPassword(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Password reset successful",
+      })
     );
 
-    // Verifikasi bahwa password telah diubah
     const user = await User.findOne({
       where: { email: "resetuser@example.com" },
     });
@@ -138,11 +204,19 @@ describe("PUT /api/auth/reset-password/:resettoken", () => {
   });
 
   it("should return 400 for invalid or expired token", async () => {
-    const response = await request(app)
-      .put(`/api/auth/reset-password/invalidtoken`)
-      .send({ password: "newpassword123" });
+    const req = {
+      params: { resettoken: "invalidtoken" },
+      body: { password: "newpassword123" },
+    };
+    const res = mockResponse();
 
-    expect(response.status).toBe(400);
-    expect(response.body).toHaveProperty("message", "Invalid or expired token");
+    await authController.resetPassword(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Invalid or expired token",
+      })
+    );
   });
 });

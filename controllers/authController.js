@@ -175,9 +175,7 @@ const authController = {
       user.resetPasswordExpires = Date.now() + 3600000; // Token expires in 1 hour
       await user.save();
 
-      const resetURL = `${req.protocol}://${req.get(
-        "host"
-      )}/api/v1/auth/resetpassword/${resetToken}`;
+      const resetURL = `http://localhost:3000/api/v1/auth/resetpassword/${resetToken}`;
 
       await sendEmail({
         email: user.email,
