@@ -3,7 +3,9 @@ const router = express.Router();
 const postController = require("../controllers/postController");
 const { verifyToken } = require("../middleware/authMiddleware");
 const { validate } = require("../middleware/validateMiddleware");
-const { body } = require("express-validator");
+const { body, param } = require("express-validator");
+const { upload } = require("../config/uploadConfig");
+const uploadErrorHandler = require("../middleware/uploadErrorHandler");
 
 /**
  * @swagger
@@ -50,7 +52,7 @@ const { body } = require("express-validator");
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -58,10 +60,9 @@ const { body } = require("express-validator");
  *             properties:
  *               content:
  *                 type: string
- *               imageUrl:
+ *               fileImage:
  *                 type: string
- *               cloudinaryId:
- *                 type: string
+ *                 format: binary
  *     responses:
  *       201:
  *         description: The post was successfully created
@@ -75,11 +76,9 @@ const { body } = require("express-validator");
 router.post(
   "/",
   verifyToken,
-  validate([
-    body("content").notEmpty(),
-    body("imageUrl").optional().isURL(),
-    body("cloudinaryId").optional().isString(),
-  ]),
+  upload.single("fileImage"),
+  uploadErrorHandler,
+  validate([body("content").notEmpty().withMessage("Content is required")]),
   postController.createPost
 );
 
@@ -119,15 +118,17 @@ router.get("/", postController.getPosts);
  *     responses:
  *       201:
  *         description: The post was successfully liked
- *       400:
+ *       200:
  *         description: The post was already liked
+ *       404:
+ *         description: Post not found
  *       500:
  *         description: Some server error
  */
 router.post(
   "/:postId/like",
   verifyToken,
-  validate([body("postId").isInt()]),
+  validate([param("postId").isInt().withMessage("Invalid post ID")]),
   postController.likePost
 );
 
@@ -149,15 +150,15 @@ router.post(
  *     responses:
  *       200:
  *         description: The post was successfully unliked
- *       400:
- *         description: The post was not liked
+ *       404:
+ *         description: Post not found
  *       500:
  *         description: Some server error
  */
 router.delete(
   "/:postId/like",
   verifyToken,
-  validate([body("postId").isInt()]),
+  validate([param("postId").isInt().withMessage("Invalid post ID")]),
   postController.unlikePost
 );
 

@@ -1,6 +1,6 @@
 const { UserProfile, User } = require("../models");
-const { upload, uploadToCloudinary } = require("../config/uploadConfig");
-const fs = require("fs");
+const { uploadToCloudinary } = require("../config/uploadConfig");
+const cloudinary = require("../config/cloudinaryConfig");
 const { validationResult } = require("express-validator");
 
 const userProfileController = {
@@ -183,16 +183,9 @@ const userProfileController = {
             await cloudinary.uploader.destroy(profile.cloudinaryId);
           }
 
-          const result = await cloudinary.uploader.upload(file.path, {
-            folder: "user_profiles",
-            use_filename: true,
-            unique_filename: false,
-          });
+          const result = await uploadToCloudinary(file);
           profile.profilePicture = result.secure_url;
           profile.cloudinaryId = result.public_id;
-
-          // Hapus file lokal
-          fs.unlinkSync(file.path);
         } catch (uploadError) {
           console.error("Error updating image on Cloudinary:", uploadError);
           return res.status(500).json({
@@ -202,7 +195,6 @@ const userProfileController = {
           });
         }
       }
-
       await profile.save();
       res.status(200).json({
         success: true,

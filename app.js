@@ -7,7 +7,7 @@ const express = require("express");
 const cors = require("cors");
 const { sequelize } = require("./models");
 const userRoutes = require("./routes/userRoutes");
-// const postRoutes = require("./routes/postRoutes");
+const postRoutes = require("./routes/postRoutes");
 const userProfileRoutes = require("./routes/userProfileRoutes");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsDoc = require("swagger-jsdoc");
@@ -70,7 +70,7 @@ app.use(
   swaggerUi.setup(swaggerDocs, { explorer: true, customCssUrl: CSS_URL })
 );
 app.use("/api/users", userRoutes);
-// app.use("/api/posts", postRoutes);
+app.use("/api/posts", postRoutes);
 app.use("/api/profiles", userProfileRoutes);
 
 app.get("/", (req, res) => {

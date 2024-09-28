@@ -1,5 +1,6 @@
 const { Post, User, Like } = require("../models");
 const jwt = require("jsonwebtoken");
+const { uploadToCloudinary } = require("../config/uploadConfig");
 
 const postController = {
   async createPost(req, res) {
@@ -8,7 +9,28 @@ const postController = {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const userId = decoded.id;
 
-      const { content, imageUrl, cloudinaryId } = req.body;
+      const { content } = req.body;
+      let imageUrl = null;
+      let cloudinaryId = null;
+
+      if (req.file) {
+        try {
+          const result = await uploadToCloudinary(req.file);
+          if (result) {
+            imageUrl = result.secure_url;
+            cloudinaryId = result.public_id;
+          }
+        } catch (uploadError) {
+          console.error("Error uploading to Cloudinary:", uploadError);
+          return res.status(500).json({
+            status: 500,
+            returnCode: -10000000004,
+            message: "Could not upload image",
+            error: "CLOUDINARY_UPLOAD_ERROR",
+          });
+        }
+      }
+
       const post = await Post.create({
         content,
         imageUrl,
@@ -16,10 +38,20 @@ const postController = {
         userId,
       });
 
-      res.status(201).json(post);
+      res.status(201).json({
+        status: 201,
+        returnCode: 0,
+        message: "Post created successfully",
+        data: post,
+      });
     } catch (error) {
       console.error("Create post error:", error);
-      res.status(500).json({ message: "Could not create post" });
+      res.status(500).json({
+        status: 500,
+        returnCode: -10000000005,
+        message: "Could not create post",
+        error: "INTERNAL_SERVER_ERROR",
+      });
     }
   },
 
@@ -31,19 +63,45 @@ const postController = {
 
       const { postId } = req.params;
 
+      // Cek apakah post ada
+      const post = await Post.findByPk(postId);
+      if (!post) {
+        return res.status(404).json({
+          status: 404,
+          returnCode: -10000000006,
+          message: "Post not found",
+          error: "POST_NOT_FOUND",
+        });
+      }
+
       const [like, created] = await Like.findOrCreate({
         where: { userId, postId },
       });
 
       if (created) {
         await Post.increment("likeCount", { where: { id: postId } });
-        res.status(201).json({ message: "Post liked successfully" });
+        res.status(201).json({
+          status: 201,
+          returnCode: 0,
+          message: "Post liked successfully",
+          data: { liked: true, likeCount: post.likeCount + 1 },
+        });
       } else {
-        res.status(400).json({ message: "You've already liked this post" });
+        res.status(200).json({
+          status: 200,
+          returnCode: 0,
+          message: "Post already liked",
+          data: { liked: true, likeCount: post.likeCount },
+        });
       }
     } catch (error) {
       console.error("Like post error:", error);
-      res.status(500).json({ message: "Could not like post" });
+      res.status(500).json({
+        status: 500,
+        returnCode: -10000000007,
+        message: "Could not like post",
+        error: "INTERNAL_SERVER_ERROR",
+      });
     }
   },
 
@@ -55,19 +113,45 @@ const postController = {
 
       const { postId } = req.params;
 
+      // Cek apakah post ada
+      const post = await Post.findByPk(postId);
+      if (!post) {
+        return res.status(404).json({
+          status: 404,
+          returnCode: -10000000008,
+          message: "Post not found",
+          error: "POST_NOT_FOUND",
+        });
+      }
+
       const deleted = await Like.destroy({
         where: { userId, postId },
       });
 
       if (deleted) {
         await Post.decrement("likeCount", { where: { id: postId } });
-        res.status(200).json({ message: "Post unliked successfully" });
+        res.status(200).json({
+          status: 200,
+          returnCode: 0,
+          message: "Post unliked successfully",
+          data: { liked: false, likeCount: post.likeCount - 1 },
+        });
       } else {
-        res.status(400).json({ message: "You haven't liked this post" });
+        res.status(200).json({
+          status: 200,
+          returnCode: 0,
+          message: "Post was not liked",
+          data: { liked: false, likeCount: post.likeCount },
+        });
       }
     } catch (error) {
       console.error("Unlike post error:", error);
-      res.status(500).json({ message: "Could not unlike post" });
+      res.status(500).json({
+        status: 500,
+        returnCode: -10000000009,
+        message: "Could not unlike post",
+        error: "INTERNAL_SERVER_ERROR",
+      });
     }
   },
 
